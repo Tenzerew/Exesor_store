@@ -45,3 +45,41 @@ def return_passwords(item):
 
     return pass_list
 
+
+def add_location(location, network, password):
+    try:
+        cursor.execute(f"CREATE TABLE {location}({network} TEXT)")
+        cursor.execute(f"INSERT INTO {location} VALUES(?) ", (password,))
+        db.commit()
+    except:
+        return "Такая локация уже существует."
+
+
+def add_passwords(location, keys_passwords):
+    try:
+        keys_passwords = eval(keys_passwords)
+    
+        keys = keys_passwords.keys()
+    except Exception:
+        return "Неправильный ввод словаря"
+    try:
+        for i in keys:
+            cursor.execute(f"""ALTER TABLE {location}\n
+                        ADD {i} TEXT;
+                        """)
+    except sqlite3.OperationalError:
+        return "Такие точки уже существуют"
+    
+
+    keys_list = []
+    values_list = []
+    for i, j in keys_passwords.items():
+        keys_list.append(i)
+        values_list.append(j)
+    try:
+        for i in range(len(keys_list)):
+            cursor.execute(f"UPDATE {location} SET '{keys_list[i]}' = '{values_list[i]}';")
+        db.commit()
+    except sqlite3.OperationalError:
+        return "Такие пароли уже существуют"
+

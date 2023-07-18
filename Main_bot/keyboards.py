@@ -15,6 +15,9 @@ cancel = ReplyKeyboardMarkup(resize_keyboard=True)
 cancel.add(KeyboardButton("❌ Cancel")).insert(KeyboardButton("↖️ Вернуться к выбору"))
 
 
+cancel_fsm = ReplyKeyboardMarkup(resize_keyboard=True)
+cancel_fsm.add(KeyboardButton("⚠️ Quit"))
+
 enter_istoki = InlineKeyboardMarkup(row_width=1)
 enter_istoki.add(InlineKeyboardButton(text="💰 Купить пароли", callback_data="istoki"))
 
@@ -27,8 +30,7 @@ enter_work.add(InlineKeyboardButton(text="💰 Купить пароли", callb
 
 admin_panel = ReplyKeyboardMarkup(resize_keyboard=True)
 admin_panel.add(KeyboardButton("📚 Info", )).insert(KeyboardButton("💻 About me")
-).add(KeyboardButton("👨‍💻 Product list")).add(KeyboardButton("🔐 Admin panel")
-).add(KeyboardButton("🔧 Добавить локацию")).add(KeyboardButton("💰 Добавить пароль"))
+).add(KeyboardButton("👨‍💻 Product list")).add(KeyboardButton("🔧 Добавить локацию")).add(KeyboardButton("💰 Добавить пароль"))
 
 
 

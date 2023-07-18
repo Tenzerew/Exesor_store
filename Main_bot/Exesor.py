@@ -37,10 +37,18 @@ products = 0
 # //////////////////// init bot ///////////////////////
 
 
-load_dotenv()
+load_dotenv("/home/elliot/Рабочий стол/.env")
 
 bot = Bot(token=os.getenv("BOT_TOKEN"), parse_mode="HTML")
 dp = Dispatcher(bot=bot, storage=MemoryStorage())
+
+
+class AddAnyData(StatesGroup):
+    location = State()
+    location_for_passwords = State()
+    network = State()
+    password = State()
+    dict_passwords = State()
 
 
 class SaveData:
@@ -55,12 +63,8 @@ async def on_startup(_):
 
 @dp.message_handler(commands=["start"])
 async def start(message: types.Message):
-    await message.answer(f"Привет, <b>{message.from_user.first_name}</b>. Это магазин по продаже паролей от WiFi точек по всему городу. ", reply_markup=kb.main_keyboard)
-    
-@dp.message_handler(text=["exit"])
-async def exit(message: types.Message):
-
-    raise SystemExit()
+    await message.answer(f"Привет, <b>{message.from_user.first_name}</b>. Это магазин по продаже паролей от WiFi точек по всему городу.  ", reply_markup=kb.main_keyboard)
+ 
 
 
 @dp.message_handler(text=["👨‍💻 Product list", "↖️ Вернуться к выбору"])
@@ -74,6 +78,12 @@ async def info(message: types.Message):
     await message.reply(HELP_BOARD, reply_markup=kb.main_keyboard)
 
 
+@dp.message_handler(text="⚠️ Quit", state=[AddAnyData.location, AddAnyData.network, AddAnyData.password, AddAnyData.dict_passwords, AddAnyData.location_for_passwords])
+async def quit(message: types.Message, state=FSMContext):
+    await state.finish()
+    await message.answer("Вы отменили цепочку", reply_markup=kb.admin_panel)
+
+
 @dp.message_handler(text="🔐 Admin panel")
 async def admin_panel(message: types.Message):
     if message.from_user.id == int(os.getenv("ADMIN_ID")):
@@ -82,12 +92,66 @@ async def admin_panel(message: types.Message):
         await message.answer("Вы не являетесь создателем бота, root$elliot")
 
 
+@dp.message_handler(text="💰 Добавить пароль")
+async def req_password(message: types.Message):
+    await message.reply("Напишите локацию к которой вы хотите добавить пароль", reply_markup=kb.cancel_fsm)
+    await AddAnyData.location_for_passwords.set()
+
+
+@dp.message_handler(state=AddAnyData.location_for_passwords)
+async def add_location(message: types.Message, state: FSMContext):
+    await state.update_data(location_for_passwords=message.text)
+    await message.answer("Отлично! Теперь ты должен ввести данные в формате {'network': 'password'}", reply_markup=kb.cancel_fsm)
+    await AddAnyData.dict_passwords.set()
+
+
+@dp.message_handler(state=AddAnyData.dict_passwords)
+async def add_dict_passwords(message: types.Message, state=FSMContext):
+    await state.update_data(dict_passwords=message.text)
+    data = await state.get_data()
+    text = db.add_passwords(data["location_for_passwords"], data["dict_passwords"])
+    if text:
+        await message.answer(text, reply_markup=kb.admin_panel)
+    else:
+        await message.answer("Отлично, сейчас произошло пополнение базы данных", reply_markup=kb.admin_panel)
+
+    await state.finish()
+
+@dp.message_handler(text="🔧 Добавить локацию")
+async def req_location(message: types.Message):
+    await message.reply("Напишите название локации (создание доступно только с учетом создания таблицы хотябы с одной точкой и паролем.)", reply_markup=kb.cancel_fsm)
+    await AddAnyData.location.set()
+
+
+@dp.message_handler(state=AddAnyData.location)
+async def add_location(message: types.Message, state: FSMContext):
+    await state.update_data(location=message.text)
+    await message.answer("Отлично! Введи имя сети")
+    await AddAnyData.network.set()
+
+
+@dp.message_handler(state=AddAnyData.network)
+async def add_location(message: types.Message, state: FSMContext):
+    await state.update_data(network=message.text)
+    await message.answer("Отлично! Введи пароль от сети")
+    await AddAnyData.password.set()
+    
+
+@dp.message_handler(state=AddAnyData.password)
+async def add_location(message: types.Message, state: FSMContext):
+    await state.update_data(password=message.text)
+    
+    data = await state.get_data()
+    data = db.add_location(location=data["location"], network=data["network"], password=data["password"])
+    if data:
+        await message.answer(data, reply_markup=kb.admin_panel)
+    else:
+        await message.answer("Отлично! Сейчас проинициализирована локация!", reply_markup=kb.admin_panel)
+    
+    await state.finish()
 
 
 # ///////////////////////// CALLBACK QUERY //////////////////////////////
-
-
-
 
 
 
